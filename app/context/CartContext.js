@@ -4,12 +4,11 @@ import React, { createContext, useState, useContext } from 'react';
 
 export const CartContext = createContext();
 
-export const useCart = () => {
-  return useContext(CartContext);
-};
+export const useCart = () => useContext(CartContext);
 
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
+  const [discount, setDiscount] = useState({ type: null, value: 0 });
 
   const addToCart = (product) => {
     setCart((prevCart) => {
@@ -22,7 +21,6 @@ export const CartProvider = ({ children }) => {
         return [...prevCart, { ...product, quantity: 1 }];
       }
     });
-    console.log(cart);
   };
 
   const removeFromCart = (productId) => {
@@ -37,17 +35,37 @@ export const CartProvider = ({ children }) => {
     );
   };
 
-  const getLength = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0);
-  };
-
   const getTotalPrice = () => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   };
 
+  const applyDiscount = (type, value) => {
+    setDiscount({ type, value });
+  };
+
+  const getDiscountedTotal = () => {
+    const subtotal = getTotalPrice();
+    if (discount.type === 'fixed') {
+      return Math.max(subtotal - discount.value, 0); // Ensure the total doesn't go below 0
+    } else if (discount.type === 'percentage') {
+      return Math.max(subtotal * (1 - discount.value / 100), 0);
+    } else {
+      return subtotal; // No discount applied
+    }
+  };
+
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, removeFromCart, updateQuantity, getTotalPrice,getLength }}
+      value={{
+        cart,
+        addToCart,
+        removeFromCart,
+        updateQuantity,
+        getTotalPrice,
+        applyDiscount,
+        getDiscountedTotal,
+        discount
+      }}
     >
       {children}
     </CartContext.Provider>
